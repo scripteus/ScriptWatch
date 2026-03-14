@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ScriptWatch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-slate-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="dashboard.html" class="text-xl font-bold text-emerald-400">ScriptWatch</a>
+                <div class="flex gap-6">
+                    <a href="dashboard.html" class="text-emerald-400 font-medium">Dashboard</a>
+                    <a href="scripts.html" class="hover:text-emerald-400 transition">Scripts</a>
+                    <a href="executions.html" class="hover:text-emerald-400 transition">Histórico</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6">Dashboard</h1>
+
+        <!-- Cards de estatísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-emerald-500">
+                <p class="text-slate-500 text-sm font-medium">Execuções hoje</p>
+                <p id="execucoesHoje" class="text-3xl font-bold text-slate-800">-</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-red-500">
+                <p class="text-slate-500 text-sm font-medium">Erros hoje</p>
+                <p id="errosHoje" class="text-3xl font-bold text-slate-800">-</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
+                <p class="text-slate-500 text-sm font-medium">Tempo médio</p>
+                <p id="tempoMedio" class="text-3xl font-bold text-slate-800">-</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-amber-500">
+                <p class="text-slate-500 text-sm font-medium">Scripts ativos</p>
+                <p id="scriptsAtivos" class="text-3xl font-bold text-slate-800">-</p>
+            </div>
+        </div>
+
+        <!-- Scripts mais executados -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4">Scripts mais executados hoje</h2>
+            <div id="topScripts" class="space-y-3">
+                <p class="text-slate-500">Carregando...</p>
+            </div>
+        </div>
+
+        <!-- Monitoramento (última execução por script) -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <h2 class="text-lg font-semibold text-slate-800 p-6 pb-0">Monitoramento em tempo real</h2>
+            <p class="text-slate-500 text-sm px-6 mt-1 mb-4">Última execução de cada script</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Script</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Última execução</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Duração</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Detalhes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monitoramentoBody" class="divide-y divide-slate-200">
+                        <tr><td colspan="5" class="px-6 py-4 text-slate-500">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                const [stats, monitoramento, scripts] = await Promise.all([
+                    api.dashboard.stats(),
+                    api.dashboard.monitoramento(),
+                    api.scripts.list()
+                ]);
+
+                document.getElementById('execucoesHoje').textContent = stats.execucoesHoje;
+                document.getElementById('errosHoje').textContent = stats.errosHoje;
+                document.getElementById('tempoMedio').textContent = formatDuration(stats.tempoMedioExecucaoMs);
+                document.getElementById('scriptsAtivos').textContent = scripts.filter(s => s.ativo).length;
+
+                const top = stats.scriptsMaisExecutados || [];
+                const topEl = document.getElementById('topScripts');
+                if (top.length === 0) {
+                    topEl.innerHTML = '<p class="text-slate-500">Nenhuma execução hoje.</p>';
+                } else {
+                    topEl.innerHTML = top.map((s, i) => `
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
+                            <span class="font-medium text-slate-800">${i + 1}. ${s.scriptNome}</span>
+                            <span class="text-slate-600">${s.quantidade} execuções</span>
+                        </div>
+                    `).join('');
+                }
+
+                const body = document.getElementById('monitoramentoBody');
+                if (monitoramento.length === 0) {
+                    body.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-slate-500">Nenhum script cadastrado.</td></tr>';
+                } else {
+                    body.innerHTML = monitoramento.map(m => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-800">${m.scriptNome || '-'}</td>
+                            <td class="px-6 py-4 text-slate-600">${formatDateTime(m.inicio)}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 rounded text-xs font-medium ${statusClass(m.status)}">${m.status || '-'}</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">${formatDuration(m.duracaoMs)}</td>
+                            <td class="px-6 py-4">
+                                ${m.id ? `<a href="details.html?id=${m.id}" class="text-emerald-600 hover:underline">Ver</a>` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('execucoesHoje').textContent = 'Erro';
+                document.getElementById('topScripts').innerHTML = '<p class="text-red-500">Falha ao carregar. Verifique se o backend está rodando.</p>';
+                document.getElementById('monitoramentoBody').innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-red-500">Falha ao carregar monitoramento.</td></tr>';
+            }
+        }
+        loadDashboard();
+    </script>
+</body>
+</html>

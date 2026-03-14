@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Execução - ScriptWatch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-slate-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="dashboard.html" class="text-xl font-bold text-emerald-400">ScriptWatch</a>
+                <div class="flex gap-6">
+                    <a href="dashboard.html" class="hover:text-emerald-400 transition">Dashboard</a>
+                    <a href="scripts.html" class="hover:text-emerald-400 transition">Scripts</a>
+                    <a href="executions.html" class="hover:text-emerald-400 transition">Histórico</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <a href="executions.html" class="text-emerald-600 hover:underline mb-4 inline-block">← Voltar ao Histórico</a>
+        <h1 class="text-2xl font-bold text-slate-800 mb-6">Detalhes da Execução</h1>
+
+        <div id="loading" class="text-slate-500">Carregando...</div>
+        <div id="content" class="hidden space-y-6">
+            <!-- Info resumida -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-xl shadow p-4">
+                    <p class="text-slate-500 text-sm">Script</p>
+                    <p id="scriptNome" class="font-semibold text-slate-800">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-4">
+                    <p class="text-slate-500 text-sm">Status</p>
+                    <p id="status" class="font-semibold">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-4">
+                    <p class="text-slate-500 text-sm">Duração</p>
+                    <p id="duracao" class="font-semibold text-slate-800">-</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow p-4">
+                <p class="text-slate-500 text-sm mb-1">Início</p>
+                <p id="inicio" class="text-slate-800">-</p>
+            </div>
+
+            <div id="erroSection" class="bg-red-50 border border-red-200 rounded-xl p-4 hidden">
+                <p class="text-red-800 font-semibold mb-2">Mensagem de erro</p>
+                <pre id="mensagemErro" class="text-red-700 text-sm whitespace-pre-wrap overflow-x-auto">-</pre>
+            </div>
+
+            <div class="bg-white rounded-xl shadow p-4">
+                <p class="text-slate-800 font-semibold mb-2">Log de execução</p>
+                <pre id="logExecucao" class="bg-slate-900 text-slate-100 p-4 rounded-lg text-sm overflow-x-auto max-h-96 overflow-y-auto font-mono whitespace-pre-wrap">-</pre>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+
+        async function loadDetails() {
+            if (!id) {
+                document.getElementById('loading').textContent = 'ID não informado.';
+                return;
+            }
+            try {
+                const e = await api.executions.get(id);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+                document.getElementById('scriptNome').textContent = e.scriptNome || '-';
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = e.status || '-';
+                statusEl.className = 'font-semibold ' + (e.status === 'SUCESSO' ? 'text-emerald-600' : 'text-red-600');
+                document.getElementById('duracao').textContent = formatDuration(e.duracaoMs);
+                document.getElementById('inicio').textContent = formatDateTime(e.inicio);
+                document.getElementById('logExecucao').textContent = e.logExecucao || '(sem log)';
+
+                if (e.mensagemErro) {
+                    document.getElementById('erroSection').classList.remove('hidden');
+                    document.getElementById('mensagemErro').textContent = e.mensagemErro;
+                } else {
+                    document.getElementById('erroSection').classList.add('hidden');
+                }
+            } catch (err) {
+                document.getElementById('loading').textContent = 'Erro ao carregar: ' + err.message;
+            }
+        }
+        loadDetails();
+    </script>
+</body>
+</html>
