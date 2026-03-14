@@ -1,0 +1,15 @@
+br\com\scriptwatch\ScriptWatchApplication.class
+br\com\scriptwatch\dto\DashboardStatsDTO$ScriptCountDTO.class
+br\com\scriptwatch\service\ExecutionService.class
+br\com\scriptwatch\dto\ExecutionDTO.class
+br\com\scriptwatch\dto\DashboardStatsDTO.class
+br\com\scriptwatch\entity\Execution.class
+br\com\scriptwatch\controller\ExecutionController.class
+br\com\scriptwatch\dto\ScriptDTO.class
+br\com\scriptwatch\repository\ExecutionRepository.class
+br\com\scriptwatch\config\WebConfig.class
+br\com\scriptwatch\entity\Script.class
+br\com\scriptwatch\service\ScriptService.class
+br\com\scriptwatch\controller\ScriptController.class
+br\com\scriptwatch\repository\ScriptRepository.class
+br\com\scriptwatch\entity\Execution$ExecutionStatus.class
